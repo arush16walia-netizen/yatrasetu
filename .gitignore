@@ -49,3 +49,5 @@ prisma/dev.db*
 .freebuff/*.log
 .freebuff/*.log.err
 .freebuff/*.pid
+
+.next-dev.log
