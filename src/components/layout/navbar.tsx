@@ -9,13 +9,67 @@ import { ArrowUpRight, Menu, UserRound, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Container } from "@/components/ui/container";
 import { ButtonLink } from "@/components/ui/button";
+import { SearchDialog } from "@/components/search/search-dialog";
+import { NavDropdown, type MenuSection } from "@/components/layout/nav-dropdown";
 
-const NAV_LINKS = [
-  { href: "/explore", label: "Explore" },
-  { href: "/stays", label: "Stays" },
-  { href: "/itinerary", label: "Itinerary" },
-  { href: "/events", label: "Restoration" },
-  { href: "/rewards", label: "Rewards" },
+type NavItem =
+  | { kind: "link"; href: string; label: string; mobileLabel?: string }
+  | { kind: "menu"; href: string; label: string; sections: MenuSection[] };
+
+const NAV_ITEMS: NavItem[] = [
+  { kind: "link", href: "/explore", label: "Explore" },
+  {
+    kind: "menu",
+    href: "/events",
+    label: "Restore",
+    sections: [
+      {
+        heading: "Give back",
+        links: [
+          { href: "/events", label: "Restoration events", note: "RSVP to a seva morning" },
+          { href: "/report-litter", label: "Report litter", note: "+50 points · dispatch a crew" },
+          { href: "/trending", label: "Crowd alerts", note: "Places loved too hard" },
+        ],
+      },
+    ],
+  },
+  { kind: "link", href: "/plan", label: "Plan", mobileLabel: "My Yatra" },
+  { kind: "link", href: "/stays", label: "Stays" },
+  {
+    kind: "menu",
+    href: "/heritage",
+    label: "Tools",
+    sections: [
+      {
+        heading: "Travel sharper",
+        links: [
+          { href: "/heritage", label: "Heritage storyteller", note: "India's stones, narrated aloud" },
+          { href: "/phrasebook", label: "Dialect phrasebook", note: "Speak the hills, respect the custom" },
+          { href: "/offline-pass", label: "Offline pass", note: "Works in airplane mode · SOS dialers" },
+        ],
+      },
+    ],
+  },
+  { kind: "link", href: "/rewards", label: "Rewards" },
+];
+
+// One source of nav truth: the mobile overlay is derived from NAV_ITEMS —
+// menu heads plus their section links (dropping any link that duplicates the
+// head), with bookend Home and Impact entries.
+const MOBILE_LINKS = [
+  { href: "/", label: "Home" },
+  ...NAV_ITEMS.flatMap((item) => {
+    if (item.kind === "link") {
+      return [{ href: item.href, label: item.mobileLabel ?? item.label }];
+    }
+    const head = { href: item.href, label: item.label };
+    const sectionLinks = item.sections
+      .flatMap((s) => s.links)
+      .filter((l) => l.href !== item.href)
+      .map((l) => ({ href: l.href, label: l.mobileLabel ?? l.label }));
+    return [head, ...sectionLinks];
+  }),
+  { href: "/impact", label: "Impact" },
 ];
 
 export function BrandMark({ dark = false }: { dark?: boolean }) {
@@ -99,42 +153,52 @@ export function Navbar() {
 
             {/* Desktop links */}
             <ul className="hidden items-center gap-1 lg:flex">
-              {NAV_LINKS.map((link) => {
-                const active = pathname.startsWith(link.href);
-                return (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className={cn(
-                        "relative rounded-md px-4 py-2 text-sm font-medium transition-colors duration-300",
-                        scrolled
-                          ? active
-                            ? "text-ink"
-                            : "text-stone hover:text-ink"
-                          : active
-                            ? "text-paper"
-                            : "text-paper/70 hover:text-paper",
-                      )}
-                    >
-                      {link.label}
-                      {active && (
-                        <motion.span
-                          layoutId="nav-active"
-                          className={cn(
-                            "absolute inset-x-3 -bottom-px h-px",
-                            scrolled ? "bg-saffron-deep" : "bg-saffron",
-                          )}
-                          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                        />
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
+              {NAV_ITEMS.map((item) => (
+                <li key={item.label}>
+                  {item.kind === "menu" ? (
+                    <NavDropdown
+                      label={item.label}
+                      href={item.href}
+                      sections={item.sections}
+                      scrolled={scrolled}
+                    />
+                  ) : (() => {
+                    const active = pathname.startsWith(item.href);
+                    return (
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "relative rounded-md px-4 py-2 text-sm font-medium transition-colors duration-300",
+                          scrolled
+                            ? active
+                              ? "text-ink"
+                              : "text-stone hover:text-ink"
+                            : active
+                              ? "text-paper"
+                              : "text-paper/70 hover:text-paper",
+                        )}
+                      >
+                        {item.label}
+                        {active && (
+                          <motion.span
+                            layoutId="nav-active"
+                            className={cn(
+                              "absolute inset-x-3 -bottom-px h-px",
+                              scrolled ? "bg-saffron-deep" : "bg-saffron",
+                            )}
+                            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                          />
+                        )}
+                      </Link>
+                    );
+                  })()}
+                </li>
+              ))}
             </ul>
 
             {/* Right controls */}
             <div className="flex items-center gap-2">
+              <SearchDialog variant={scrolled ? "light" : "dark"} />
               {session?.user ? (
                 <Link
                   href="/profile"
@@ -164,7 +228,7 @@ export function Navbar() {
                 </Link>
               )}
               <ButtonLink href="/events" size="sm" className="hidden sm:inline-flex">
-                Join an event
+                Start Your Yatra
                 <ArrowUpRight className="size-4" aria-hidden />
               </ButtonLink>
               <button
@@ -211,11 +275,7 @@ export function Navbar() {
               </button>
             </div>
             <nav className="flex flex-1 flex-col justify-center gap-1 px-8" aria-label="Mobile">
-              {[
-                { href: "/", label: "Home" },
-                ...NAV_LINKS,
-                { href: "/impact", label: "Impact" },
-              ].map((link, i) => (
+              {MOBILE_LINKS.map((link, i) => (
                 <motion.div
                   key={link.href}
                   initial={reduce ? false : { opacity: 0, y: 24 }}
@@ -239,7 +299,7 @@ export function Navbar() {
             </nav>
             <div className="px-8 pb-10">
               <ButtonLink href="/events" className="w-full" size="lg">
-                Join a restoration event
+                Start Your Yatra
                 <ArrowUpRight className="size-4" aria-hidden />
               </ButtonLink>
               <p className="mt-6 text-center font-deva text-sm text-mist">यात्रा बने सेवा</p>

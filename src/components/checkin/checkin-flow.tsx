@@ -24,10 +24,15 @@ type Awarded = {
   icon: string;
   color: string | null;
   tier: number;
-};
-
-type Success = {
-  attendance: { verifiedAt: string; latitude: number | null; longitude: number | null; geoAccuracy: number | null };
+};  type Success = {
+    attendance: {
+      verifiedAt: string;
+      latitude: number | null;
+      longitude: number | null;
+      geoAccuracy: number | null;
+      geoVerified?: boolean;
+      distanceMeters?: number | null;
+    };
   eventTitle: string;
   destinationName: string;
   pointsAwarded?: number;
@@ -232,6 +237,14 @@ export function CheckinFlow({
                   {success.attendance.geoAccuracy != null && (
                     <span className="ml-1 text-xs text-stone">±{Math.round(success.attendance.geoAccuracy)}m</span>
                   )}
+                </dd>
+                <dt className="flex items-center gap-2 text-stone">
+                  <MapPin className="size-4 text-verify" aria-hidden /> Geofence
+                </dt>
+                <dd className="font-medium text-ink">
+                  {success.attendance.geoVerified
+                    ? `Verified — within 200 m of the site${success.attendance.distanceMeters != null ? ` (${success.attendance.distanceMeters} m)` : ""}`
+                    : "No location proof — recorded unverified"}
                 </dd>
               </div>
             </dl>

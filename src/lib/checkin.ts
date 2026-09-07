@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 
 /** Stable human-friendly check-in code for an event, e.g. "RIVER-4821". */
 export function deriveCheckinCode(slug: string, title: string): string {
@@ -35,13 +35,15 @@ export function stampCodeForDestination(slug: string): string {
 export type AwardedStamp = { code: string; name: string; nameHindi: string | null; icon: string; color: string | null; tier: number };
 
 /**
- * Award stamps for a verified attendance:
+ * Award stamps for a verified attendance — runs inside the check-in
+ * transaction so attendance, points and stamps commit or fail together:
  * - the destination's stamp (e.g. Jal Mitra for river events)
  * - Prabhat when the event starts before 8am
  * - Rakshak for the traveller's very first verified contribution
  * - Setu after three verified contributions in total
  */
 export async function awardStamps(
+  tx: Prisma.TransactionClient,
   userId: string,
   destinationSlug: string,
   eventStartTime: string,
@@ -49,7 +51,7 @@ export async function awardStamps(
 ): Promise<AwardedStamp[]> {
   const awarded: AwardedStamp[] = [];
 
-  const owned = await prisma.userStamp.findMany({
+  const owned = await tx.userStamp.findMany({
     where: { userId },
     select: { stamp: { select: { code: true } } },
   });
@@ -62,9 +64,9 @@ export async function awardStamps(
 
   for (const code of codes) {
     if (ownedCodes.has(code)) continue;
-    const stamp = await prisma.stamp.findUnique({ where: { code } });
+    const stamp = await tx.stamp.findUnique({ where: { code } });
     if (!stamp) continue;
-    await prisma.userStamp.create({ data: { userId, stampId: stamp.id } });
+    await tx.userStamp.create({ data: { userId, stampId: stamp.id } });
     awarded.push({
       code: stamp.code,
       name: stamp.name,
@@ -76,6 +78,43 @@ export async function awardStamps(
   }
 
   return awarded;
+}
+
+// ---------------------------------------------------------------- geofence
+
+/** How far from the meeting point a device may be and still count as on-site. */
+export const GEOFENCE_METERS = 200;
+
+/** Parse the destination's "lat,lng" coordinate string. */
+export function parseCoordinates(raw: string | null | undefined): { lat: number; lng: number } | null {
+  if (!raw) return null;
+  const [lat, lng] = raw.split(",").map(Number);
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+}
+
+export function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6_371_000;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/**
+ * Geofence verdict for a check-in. `inside` is true/false when both the device
+ * position and the site coordinates exist; null means no location proof was
+ * available (denied GPS, or the site has no coordinates) — such check-ins are
+ * accepted but marked unverified rather than faked.
+ */
+export function geofenceVerdict(
+  device: { lat: number; lng: number } | null,
+  site: { lat: number; lng: number } | null,
+): { inside: boolean | null; distanceMeters: number | null } {
+  if (!device || !site) return { inside: null, distanceMeters: null };
+  const distanceMeters = haversineMeters(device, site);
+  return { inside: distanceMeters <= GEOFENCE_METERS, distanceMeters: Math.round(distanceMeters) };
 }
 
 /** Whether check-in is currently open for an event (event day + 24h grace). */

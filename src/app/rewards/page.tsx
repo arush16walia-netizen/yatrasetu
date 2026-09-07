@@ -103,7 +103,9 @@ export default async function RewardsPage() {
                   </span>
                   <div>
                     <p className="font-display text-xl tracking-tight text-ink">Stamps earned</p>
-                    <p className="text-xs text-stone">of {stamps.length} to collect</p>
+                    <p className="text-xs text-stone">
+                      {view.stampsAvailable} available to spend · of {stamps.length} to collect
+                    </p>
                   </div>
                 </div>
               </Reveal>
@@ -142,9 +144,9 @@ export default async function RewardsPage() {
 
           <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {(view?.rewards ?? catalog).map((reward, i) => {
-              const owned = view.stampsOwned;
+              const owned = view?.stampsAvailable ?? 0;
               const affordable = owned >= reward.costStamps;
-              const already = view.redemptions.some((r) => r.reward.title === reward.title);
+              const already = view ? view.redemptions.some((r) => r.reward.id === reward.id) : false;
               return (
                 <Reveal key={reward.code} delay={Math.min(i * 0.06, 0.3)} className="h-full">
                   <div

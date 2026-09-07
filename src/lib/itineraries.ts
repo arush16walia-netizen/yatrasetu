@@ -23,50 +23,36 @@ export type Plan = {
   items: PlanItem[];
 };
 
+const planInclude = {
+  items: {
+    orderBy: [{ day: "asc" as const }, { position: "asc" as const }],
+    include: {
+      destination: { select: { slug: true, name: true, region: true, image: true } },
+      event: {
+        select: {
+          slug: true,
+          title: true,
+          date: true,
+          startTime: true,
+          destination: { select: { slug: true, name: true, region: true, image: true } },
+        },
+      },
+    },
+  },
+};
+
 /** The traveller's single active plan (create-on-demand). */
 export async function getOrCreatePlan(userId: string): Promise<Plan> {
   let plan = await prisma.userItinerary.findFirst({
     where: { userId },
     orderBy: { createdAt: "desc" },
-    include: {
-      items: {
-        orderBy: [{ day: "asc" }, { position: "asc" }],
-        include: {
-          destination: { select: { slug: true, name: true, region: true, image: true } },
-          event: {
-            select: {
-              slug: true,
-              title: true,
-              date: true,
-              startTime: true,
-              destination: { select: { slug: true, name: true, region: true, image: true } },
-            },
-          },
-        },
-      },
-    },
+    include: planInclude,
   });
 
   if (!plan) {
     plan = await prisma.userItinerary.create({
       data: { userId, name: "My Yatra" },
-      include: {
-        items: {
-          orderBy: [{ day: "asc" }, { position: "asc" }],
-          include: {
-            destination: { select: { slug: true, name: true, region: true, image: true } },
-            event: {
-              select: {
-                slug: true,
-                title: true,
-                date: true,
-                startTime: true,
-                destination: { select: { slug: true, name: true, region: true, image: true } },
-              },
-            },
-          },
-        },
-      },
+      include: planInclude,
     });
   }
 
@@ -175,40 +161,4 @@ export async function reorderPlanItems(
     ),
   );
   return { ok: true };
-}
-
-/**
- * Responsible Yatra Score — a Yatra Setu platform metric (labelled as such in
- * the UI). Derived from what the plan actually contains:
- *  - restoration event woven in (+35)
- *  - eco-badged stay destination (+15 each, cap 30)
- *  - offbeat/needs-care destinations (+12 each, cap 24 — spreading the load)
- *  - day structure (more days = slower travel, up to +15)
- *  - cap 100
- */
-export function responsibleScore(items: PlanItem[]): {
-  score: number;
-  breakdown: { label: string; value: number; note: string }[];
-} {
-  const events = items.filter((i) => i.event).length;
-  const dests = items
-    .map((i) => i.destination ?? i.event?.destination)
-    .filter((d): d is NonNullable<typeof d> => Boolean(d));
-
-  const ecoStays = Math.min(dests.length, 2) * 15;
-  const spread = Math.min(dests.length * 12, 24);
-  const pace = Math.min(items.length * 5, 15);
-  const contribution = events > 0 ? 35 : 0;
-
-  const score = Math.min(100, contribution + ecoStays + spread + pace);
-  return {
-    score,
-    breakdown: [
-      { label: "Environmental contribution", value: contribution, note: events > 0 ? `${events} restoration event${events === 1 ? "" : "s"} in the plan` : "Add a restoration event" },
-      { label: "Local participation", value: ecoStays, note: "Community-run stays & kitchens" },
-      { label: "Sustainable mobility", value: spread, note: "Fewer, longer stops beat many short hops" },
-      { label: "Waste awareness", value: pace, note: "Slower itineraries leave lighter traces" },
-      { label: "Cultural respect", value: 0, note: "Woven into every destination guide" },
-    ],
-  };
 }

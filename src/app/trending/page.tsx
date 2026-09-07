@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
-import { Clock3, Flame, MapPin, Radio, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, Clock3, Flame, MapPin, Radio, ShieldCheck, Users } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/ui/reveal";
 import { Badge } from "@/components/ui/badge";
+import { Img as Image } from "@/components/ui/image";
 import { AlertForm } from "@/components/alerts/alert-form";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
+import {
+  crowdBand,
+  getPressuredDestinations,
+  getUnderratedDestinations,
+} from "@/lib/decongestion";
 
 export const metadata: Metadata = {
   title: "Trending spot alerts",
@@ -40,16 +47,19 @@ function timeAgo(date: Date): string {
 
 export default async function TrendingPage() {
   const session = await auth();
-  const [reports, openCount, verifiedCount, resolvedCount] = await Promise.all([
-    prisma.spotReport.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 24,
-      include: { user: { select: { name: true } } },
-    }),
-    prisma.spotReport.count({ where: { status: "OPEN" } }),
-    prisma.spotReport.count({ where: { status: "VERIFIED" } }),
-    prisma.spotReport.count({ where: { status: "RESOLVED" } }),
-  ]);
+  const [reports, openCount, verifiedCount, resolvedCount, pressured, underrated] =
+    await Promise.all([
+      prisma.spotReport.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 24,
+        include: { user: { select: { name: true } } },
+      }),
+      prisma.spotReport.count({ where: { status: "OPEN" } }),
+      prisma.spotReport.count({ where: { status: "VERIFIED" } }),
+      prisma.spotReport.count({ where: { status: "RESOLVED" } }),
+      getPressuredDestinations(5),
+      getUnderratedDestinations(3),
+    ]);
 
   return (
     <>
@@ -98,6 +108,150 @@ export default async function TrendingPage() {
               </span>
             </div>
           </Reveal>
+        </Container>
+      </section>
+
+      {/* Crowd pressure — platform estimates, clearly labelled */}
+      <section className="bg-paper py-20 sm:py-28" aria-label="Crowd pressure">
+        <Container>
+          <Reveal>
+            <p className="eyebrow text-saffron-deep">Decongestion</p>
+            <h2 className="mt-5 max-w-3xl font-display text-4xl leading-[1.05] tracking-tight sm:text-6xl">
+              Some places are loved too hard.
+              <br />
+              <span className="text-stone italic">Others are waiting to be found.</span>
+            </h2>
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-stone">
+              Crowd pressure is a <strong className="font-semibold text-ink">Yatra Setu platform estimate</strong>,
+              not a live statistic — it blends visitor trends with what our leads report from the
+              ground. When a place is straining, we point you somewhere the love would help instead.
+            </p>
+          </Reveal>
+
+          <div className="mt-14 grid gap-10 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
+            {/* Pressured */}
+            <div>
+              <Reveal>
+                <div className="flex items-center gap-2.5">
+                  <Users className="size-4 text-error" aria-hidden />
+                  <h3 className="font-display text-xl tracking-tight text-ink">
+                    Under the most pressure
+                  </h3>
+                </div>
+              </Reveal>
+              <div className="mt-6 space-y-3">
+                {pressured.map((d, i) => {
+                  const band = crowdBand(d.crowdScore);
+                  return (
+                    <Reveal key={d.slug} delay={Math.min(i * 0.05, 0.25)}>
+                      <Link
+                        href={`/explore/${d.slug}`}
+                        className="group flex items-center gap-4 rounded-lg border border-ink/8 bg-paper-raised p-4 shadow-card transition-colors duration-300 hover:border-saffron/40 sm:p-5"
+                      >
+                        <div className="relative size-16 shrink-0 overflow-hidden rounded-md sm:size-20">
+                          <Image
+                            src={d.image}
+                            alt={d.imageAlt}
+                            fill
+                            sizes="80px"
+                            className="object-cover transition-transform duration-700 group-hover:scale-110"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-display text-lg tracking-tight text-ink">{d.name}</h4>
+                            <Badge tone={band.tone}>{band.label}</Badge>
+                          </div>
+                          <div
+                            className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink/8"
+                            role="meter"
+                            aria-valuenow={d.crowdScore}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label={`Crowd pressure estimate for ${d.name}: ${d.crowdScore} of 100`}
+                          >
+                            <div
+                              className={cn(
+                                "h-full rounded-full",
+                                band.key === "loving-too-hard"
+                                  ? "bg-error"
+                                  : band.key === "building"
+                                    ? "bg-saffron-deep"
+                                    : "bg-teal",
+                              )}
+                              style={{ width: `${d.crowdScore}%` }}
+                            />
+                          </div>
+                          <p className="mt-2 text-xs text-stone">
+                            Pressure {d.crowdScore}/100 · {d.region}
+                          </p>
+                        </div>
+                        <ArrowUpRight
+                          className="size-4 shrink-0 text-stone transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                          aria-hidden
+                        />
+                      </Link>
+                    </Reveal>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Underrated */}
+            <div>
+              <Reveal delay={0.1}>
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck className="size-4 text-teal" aria-hidden />
+                  <h3 className="font-display text-xl tracking-tight text-ink">
+                    Go where love helps
+                  </h3>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-stone">
+                  The same beauty, a fraction of the footfall — and restoration crews who could
+                  use your hands.
+                </p>
+              </Reveal>
+              <div className="mt-6 space-y-3">
+                {underrated.map((d, i) => {
+                  const band = crowdBand(d.crowdScore);
+                  return (
+                    <Reveal key={d.slug} delay={0.1 + Math.min(i * 0.05, 0.2)}>
+                      <Link
+                        href={`/explore/${d.slug}`}
+                        className="group flex items-center gap-4 rounded-lg border border-teal/20 bg-teal/5 p-4 transition-colors duration-300 hover:border-teal/50 sm:p-5"
+                      >
+                        <div className="relative size-14 shrink-0 overflow-hidden rounded-md">
+                          <Image
+                            src={d.image}
+                            alt={d.imageAlt}
+                            fill
+                            sizes="56px"
+                            className="object-cover transition-transform duration-700 group-hover:scale-110"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-display text-lg tracking-tight text-ink">{d.name}</h4>
+                          <p className="mt-0.5 text-xs text-stone">
+                            {d.tagline} · gentle {d.crowdScore}/100
+                          </p>
+                        </div>
+                        <Badge tone="teal">{band.label}</Badge>
+                      </Link>
+                    </Reveal>
+                  );
+                })}
+              </div>
+              <Reveal delay={0.25}>
+                <Link
+                  href="/explore"
+                  className="group/link mt-6 inline-flex items-center gap-2 text-sm font-bold text-ink"
+                >
+                  Browse the full map
+                  <ArrowUpRight className="size-4 transition-transform duration-300 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
+                </Link>
+              </Reveal>
+            </div>
+          </div>
         </Container>
       </section>
 

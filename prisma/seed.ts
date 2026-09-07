@@ -36,6 +36,7 @@ const destinations = [
     mapY: 0.12,
     bestSeason: "May – September",
     knownFor: JSON.stringify(["Pangong Tso", "Nubra Valley", "Magnetic Hill", "Monasteries"]),
+    crowdScore: 62,
     needsCare:
       "High-altitude lakes and camping grounds collect plastic and litter faster than they can decompose at 4,300 m.",
     careImage: u("photo-1519681393784-d120267933ba", 1200),
@@ -57,6 +58,7 @@ const destinations = [
     mapY: 0.34,
     bestSeason: "October – March",
     knownFor: JSON.stringify(["Ganga Aarti", "Assi & Dashashwamedh Ghats", "Kashi Vishwanath", "Silk weaves"]),
+    crowdScore: 84,
     needsCare:
       "Ghat steps and riverbanks gather floral offerings, plastics and silt that must be cleared daily to keep the river alive.",
     careImage: u("photo-1583417319070-4a69db38a482", 1200),
@@ -78,6 +80,7 @@ const destinations = [
     mapY: 0.68,
     bestSeason: "November – February",
     knownFor: JSON.stringify(["Virupaksha Temple", "Stone Chariot", "Matanga Hill", "Hippie Island"]),
+    crowdScore: 71,
     needsCare:
       "A UNESCO site walked by hundreds of thousands yearly — litter along boulder trails and monument precincts is a growing threat.",
     careImage: u("photo-1501785888041-af3ef285b470", 1200),
@@ -99,6 +102,7 @@ const destinations = [
     mapY: 0.78,
     bestSeason: "November – February",
     knownFor: JSON.stringify(["Houseboats", "Canals", "Vembanad Lake", "Village life"]),
+    crowdScore: 48,
     needsCare:
       "Canals choke on water hyacinth and plastic; the backwater ecosystem that tourism depends on needs active clearing.",
     careImage: u("photo-1501785888041-af3ef285b470", 1200),
@@ -119,6 +123,7 @@ const destinations = [
     mapY: 0.8,
     bestSeason: "September – May",
     knownFor: JSON.stringify(["Tea estates", "Eravikulam Park", "Top Station", "Shola forests"]),
+    crowdScore: 55,
     needsCare:
       "Trekking trails through shola forests and tea hills erode and collect waste; native forest patches need restoration.",
     careImage: u("photo-1441974231531-c6227db76b6e", 1200),
@@ -139,6 +144,7 @@ const destinations = [
     mapY: 0.7,
     bestSeason: "October – March",
     knownFor: JSON.stringify(["Om Beach", "Half Moon Beach", "Shiva temple", "Cliff treks"]),
+    crowdScore: 58,
     needsCare:
       "Monsoon pushes plastics and fishing waste onto beaches; the cliff trails between coves carry seasonal litter.",
     careImage: u("photo-1506929562872-bb421503ef21", 1200),
@@ -159,6 +165,7 @@ const destinations = [
     mapY: 0.38,
     bestSeason: "October – February",
     knownFor: JSON.stringify(["Jaisalmer Fort", "Sam Sand Dunes", "Camel safaris", "Havelis"]),
+    crowdScore: 52,
     needsCare:
       "Desert camping leaves plastics in the dunes that take decades to degrade; the dune ecosystem needs a lighter footprint.",
     careImage: u("photo-1509316785289-025f5b846b35", 1200),
@@ -179,6 +186,7 @@ const destinations = [
     mapY: 0.24,
     bestSeason: "September – June",
     knownFor: JSON.stringify(["Rafting", "Laxman Jhula", "Yoga ashrams", "Triveni Ghat"]),
+    crowdScore: 78,
     needsCare:
       "Rafting beaches and ghats accumulate plastic between monsoon flushes; riverbank seva mornings keep the Ganga alive.",
     careImage: u("photo-1501785888041-af3ef285b470", 1200),
@@ -199,6 +207,7 @@ const destinations = [
     mapY: 0.42,
     bestSeason: "October – March",
     knownFor: JSON.stringify(["Western temples", "Kandariya Mahadeva", "Light & sound show", "Sculpture detail"]),
+    crowdScore: 41,
     needsCare:
       "The temple precincts need daily litter sweeps and shade-tree care to host visitors without degrading the site.",
     careImage: KHAJURAHO,
@@ -219,6 +228,7 @@ const destinations = [
     mapY: 0.32,
     bestSeason: "November – April",
     knownFor: JSON.stringify(["One-horned rhino", "Elephant safaris", "Birdlife", "Grasslands"]),
+    crowdScore: 33,
     needsCare:
       "Buffer villages and park edges need plastic-free corridors; seasonal flooding pushes waste into the grasslands.",
     careImage: u("photo-1441974231531-c6227db76b6e", 1200),
@@ -239,6 +249,7 @@ const destinations = [
     mapY: 0.4,
     bestSeason: "October – April",
     knownFor: JSON.stringify(["Living root bridges", "Cherrapunji", "Nohkalikai Falls", "Caves"]),
+    crowdScore: 61,
     needsCare:
       "The trek to the root bridges sees thousands of feet weekly; trails and stream banks need erosion and litter care.",
     careImage: u("photo-1470071459604-3b5ec3a7fe05", 1200),
@@ -259,6 +270,7 @@ const destinations = [
     mapY: 0.66,
     bestSeason: "October – March",
     knownFor: JSON.stringify(["Coffee estates", "Abbey Falls", "Brahmagiri trek", "Kaveri origin"]),
+    crowdScore: 57,
     needsCare:
       "Forest trails and stream banks in estate country collect trekking waste; native shola patches need replanting.",
     careImage: u("photo-1500534314209-a25ddb2bd429", 1200),
@@ -280,6 +292,7 @@ const destinations = [
     mapY: 0.3,
     bestSeason: "October – March",
     knownFor: JSON.stringify(["Taj Mahal", "Agra Fort", "Fatehpur Sikri", "Mughlai food"]),
+    crowdScore: 92,
     needsCare:
       "The Taj precinct alone hosts millions of visitors yearly — its gardens, the Yamuna bank and the monument forecourts need daily litter sweeps and shade-tree care.",
     careImage: u("photo-1524492412937-b28074a5d7da", 1200),
@@ -300,6 +313,7 @@ const destinations = [
     mapY: 0.47,
     bestSeason: "September – March",
     knownFor: JSON.stringify(["Lake Pichola", "City Palace", "Jag Mandir", "Old city lanes"]),
+    crowdScore: 74,
     needsCare:
       "Lake Pichola's banks and the old city's lanes collect festival plastics and litter; the lake that defines the city needs its caretakers.",
     careImage: u("photo-1524230572899-a752b3835840", 1200),
@@ -320,6 +334,7 @@ const destinations = [
     mapY: 0.29,
     bestSeason: "October – December, March – May",
     knownFor: JSON.stringify(["Kanchenjunga views", "Toy train", "Tea estates", "Tiger Hill"]),
+    crowdScore: 49,
     needsCare:
       "Toy-train corridors and tea-garden trails carry heavy footfall; litter and trail erosion need seasonal restoration crews.",
     careImage: u("photo-1622308644420-b20142dc993c", 1200),
@@ -341,6 +356,7 @@ const destinations = [
     mapY: 0.61,
     bestSeason: "November – February",
     knownFor: JSON.stringify(["North beaches", "Old Goa churches", "Portuguese quarters", "River cruises"]),
+    crowdScore: 88,
     needsCare:
       "Monsoon pushes plastic onto the beaches tourism lives on, and heritage church precincts need gentle daily care.",
     careImage: u("photo-1506929562872-bb421503ef21", 1200),
@@ -690,7 +706,7 @@ async function main() {
   const demoPassword = await bcrypt.hash("seva@2026", 10);
   await prisma.user.upsert({
     where: { email: "admin@yatrasetu.in" },
-    update: { role: "ADMIN" },
+    update: { role: "ADMIN", passwordHash: demoPassword },
     create: {
       name: "Yatra Setu Admin",
       email: "admin@yatrasetu.in",
@@ -702,7 +718,7 @@ async function main() {
   });
   await prisma.user.upsert({
     where: { email: "meera@yatrasetu.in" },
-    update: {},
+    update: { passwordHash: demoPassword },
     create: {
       name: "Meera Iyer",
       email: "meera@yatrasetu.in",
@@ -717,7 +733,7 @@ async function main() {
   // Community lead organizer
   const organizer = await prisma.user.upsert({
     where: { email: "community@yatrasetu.in" },
-    update: { isOrganizer: true, role: "LEADER" },
+    update: { isOrganizer: true, role: "LEADER", passwordHash: demoPassword },
     create: {
       name: "Aarav Mehta",
       email: "community@yatrasetu.in",

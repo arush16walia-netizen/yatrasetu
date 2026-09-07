@@ -34,6 +34,7 @@ model User {
   organizedEvents       RestorationEvent[]
   communityApplication  CommunityApplication?
   spotReports           SpotReport[]
+  litterReports         LitterReport[]
   itineraries           UserItinerary[]
 }
 
@@ -70,6 +71,30 @@ model SpotReport {
   createdAt   DateTime @default(now())
 }
 
+// ---------------------------------------------------------------- Swachh Yatra
+
+// Citizen trail & litter report: a traveller flags a garbage dump on a remote
+// trail with GPS proof. Dispatches a cleanup ticket to local NSS-style crews;
+// the reporter earns +50 service points on submission.
+model LitterReport {
+  id          String   @id @default(cuid())
+  ticketCode  String   @unique // SW-2026-XXXX
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  spotName    String
+  region      String?
+  category    String // PLASTIC | CAMPING | GLASS | INDUSTRIAL | WRAPPERS
+  volume      String // LIGHT (1-5kg) | MODERATE (5-15kg) | HEAVY (15kg+)
+  description String?
+  latitude    Float?
+  longitude   Float?
+  hasPhoto    Boolean  @default(false)
+  status      String   @default("DISPATCHED") // DISPATCHED | ASSIGNED | RESTORED
+  createdAt   DateTime @default(now())
+
+  @@index([status, createdAt])
+}
+
 // ---------------------------------------------------------------- Destinations
 
 model Destination {
@@ -91,6 +116,7 @@ model Destination {
   needsCare   String? // what this place needs (restoration hook)
   careImage   String?
   featured    Boolean     @default(false) // highlighted on the India map + spotlight
+  crowdScore  Int         @default(50) // 0–100 pressure estimate (demo/estimated data)
   createdAt   DateTime @default(now())
 
   stays       Stay[]

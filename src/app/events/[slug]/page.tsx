@@ -18,6 +18,7 @@ import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/ui/reveal";
 import { Badge } from "@/components/ui/badge";
 import { RsvpPanel } from "@/components/events/rsvp-panel";
+import { EventWeather } from "@/components/weather/event-weather";
 import { getEventBySlug, getUpcomingEvents } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
 
@@ -63,6 +64,7 @@ export default async function EventPage({
 
   const spotsLeft = event.capacity - event.confirmedCount;
   const whatToBring = event.whatToBring.split(/[,;]+/).map((s) => s.trim()).filter(Boolean);
+  const [lat, lng] = (event.destination.coordinates ?? ",").split(",").map(Number);
 
   return (
     <>
@@ -210,6 +212,11 @@ export default async function EventPage({
           {/* RSVP rail */}
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-28">
+              {Number.isFinite(lat) && Number.isFinite(lng) && (
+                <Reveal delay={0.05}>
+                  <EventWeather lat={lat} lng={lng} eventDate={event.date} />
+                </Reveal>
+              )}
               <Reveal delay={0.1}>
                 <RsvpPanel
                   eventId={event.id}

@@ -17,7 +17,8 @@ export type RedemptionView = {
   id: string;
   code: string;
   redeemedAt: Date;
-  reward: { title: string; partner: string; value: string; type: string };
+  costStamps: number;
+  reward: { id: string; title: string; partner: string; value: string; type: string };
 };
 
 export async function getUserRewardsView(userId: string) {
@@ -26,14 +27,21 @@ export async function getUserRewardsView(userId: string) {
     prisma.redemption.findMany({
       where: { userId },
       orderBy: { redeemedAt: "desc" },
-      include: { reward: { select: { title: true, partner: true, value: true, type: true } } },
+      include: { reward: { select: { id: true, title: true, partner: true, value: true, type: true } } },
     }),
     prisma.reward.findMany({ orderBy: { costStamps: "asc" } }),
     prisma.user.findUnique({ where: { id: userId }, select: { points: true } }),
   ]);
 
+  // Stamps are spent through the redemption ledger: owned minus the cost of
+  // every redemption ever made. The raw count alone would let one stamp set
+  // pay for every reward twice.
+  const stampsSpent = redemptions.reduce((sum, r) => sum + r.costStamps, 0);
+
   return {
     stampsOwned,
+    stampsSpent,
+    stampsAvailable: Math.max(0, stampsOwned - stampsSpent),
     points: points?.points ?? 0,
     redemptions: redemptions as RedemptionView[],
     rewards: rewards as RewardView[],
@@ -58,10 +66,18 @@ export async function redeemReward(userId: string, rewardId: string): Promise<Re
 
   const result = await prisma.$transaction(async (tx) => {
     const owned = await tx.userStamp.count({ where: { userId } });
+    const spentAgg = await tx.redemption.aggregate({
+      where: { userId },
+      _sum: { costStamps: true },
+    });
+    const available = Math.max(0, owned - (spentAgg._sum.costStamps ?? 0));
     const already = await tx.redemption.count({ where: { userId, rewardId } });
 
     if (owned < reward.costStamps) {
       return { ok: false as const, error: `You need ${reward.costStamps} stamp${reward.costStamps === 1 ? "" : "s"} for this — you have ${owned}.`, status: 400 };
+    }
+    if (available < reward.costStamps) {
+      return { ok: false as const, error: "You've already spent stamps on other rewards — not enough left unspent.", status: 400 };
     }
     if (already > 0) {
       return { ok: false as const, error: "You've already redeemed this reward — check your codes below.", status: 400 };
@@ -78,7 +94,7 @@ export async function redeemReward(userId: string, rewardId: string): Promise<Re
       ok: true as const,
       redemptionCode: redemption.code,
       rewardTitle: redemption.reward.title,
-      stampsLeft: owned - reward.costStamps,
+      stampsLeft: available - reward.costStamps,
     };
   });
 

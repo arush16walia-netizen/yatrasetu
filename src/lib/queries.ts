@@ -12,6 +12,8 @@ export type DestinationSummary = {
   image: string;
   imageAlt: string;
   needsCare: string | null;
+  /** Estimated visitor pressure, 0–100. Platform estimate, not a live statistic. */
+  crowdScore: number;
   mapX: number | null;
   mapY: number | null;
   knownFor: string[];
@@ -33,6 +35,7 @@ export function toDestinationSummary(d: {
   image: string;
   imageAlt: string;
   needsCare: string | null;
+  crowdScore: number;
   mapX: number | null;
   mapY: number | null;
   coordinates: string | null;
@@ -53,6 +56,7 @@ export function toDestinationSummary(d: {
     image: d.image,
     imageAlt: d.imageAlt,
     needsCare: d.needsCare,
+    crowdScore: d.crowdScore,
     mapX: d.mapX,
     mapY: d.mapY,
     coordinates: d.coordinates,
@@ -143,7 +147,7 @@ export async function getEventBySlug(slug: string) {
       image: true,
       status: true,
       checkinCode: true,
-      destination: { select: { slug: true, name: true, region: true, image: true } },
+      destination: { select: { slug: true, name: true, region: true, image: true, coordinates: true } },
       rsvps: { select: { status: true } },
     },
   });

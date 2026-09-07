@@ -17,6 +17,7 @@ import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/ui/reveal";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   getDestinationBySlug,
   getDestinations,
@@ -25,6 +26,7 @@ import {
   getEventsByDestination,
 } from "@/lib/queries";
 import { formatDay, formatINR } from "@/lib/utils";
+import { crowdBand } from "@/lib/decongestion";
 import { GroundPanel } from "@/components/live/ground-panel";
 
 export const dynamicParams = true;
@@ -88,13 +90,28 @@ export default async function DestinationPage({
             </Link>
           </Reveal>
           <Reveal delay={0.08}>
-            <p className="mt-6 flex items-center gap-3 eyebrow text-saffron">
+            <p className="mt-6 flex flex-wrap items-center gap-3 eyebrow text-saffron">
               {dest.region}
               {dest.bestSeason && (
                 <span className="text-paper/50">
                   · Best {dest.bestSeason}
                 </span>
               )}
+            </p>
+            <p className="mt-3 flex items-center gap-2.5 text-xs text-paper/70">
+              <span
+                className={cn(
+                  "size-2 rounded-full",
+                  crowdBand(dest.crowdScore).key === "loving-too-hard"
+                    ? "bg-error"
+                    : crowdBand(dest.crowdScore).key === "building"
+                      ? "bg-saffron"
+                      : "bg-teal",
+                )}
+                aria-hidden
+              />
+              Crowd pressure {dest.crowdScore}/100 — {crowdBand(dest.crowdScore).label.toLowerCase()} ·{" "}
+              <span className="text-paper/45">Yatra Setu estimate, not a live count</span>
             </p>
           </Reveal>
           <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
