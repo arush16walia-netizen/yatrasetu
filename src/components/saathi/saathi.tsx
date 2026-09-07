@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowUp,
@@ -58,6 +58,26 @@ export function Saathi() {
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  /*
+   * Keep the newest message visible whenever the conversation changes.
+   * This makes the chat behave like a proper messaging interface.
+   */
+  useEffect(() => {
+    if (!open) return;
+
+    const container = messagesContainerRef.current;
+
+    if (!container) return;
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages, loading, open]);
 
   async function sendMessage(message: string) {
     const trimmed = message.trim();
@@ -182,8 +202,10 @@ export function Saathi() {
               right-4
               z-[100]
               flex
+              h-[min(720px,calc(100vh-32px))]
               w-[calc(100vw-2rem)]
               max-w-[430px]
+              min-h-0
               flex-col
               overflow-hidden
               rounded-[28px]
@@ -194,9 +216,6 @@ export function Saathi() {
               md:bottom-6
               md:right-6
             "
-            style={{
-              maxHeight: "min(720px, calc(100vh - 32px))",
-            }}
           >
             {/* Header */}
             <header
@@ -262,12 +281,18 @@ export function Saathi() {
 
             {/* Messages */}
             <div
+              ref={messagesContainerRef}
               className="
                 min-h-0
                 flex-1
+                overflow-x-hidden
                 overflow-y-auto
+                overscroll-contain
+                scroll-smooth
                 px-4
                 py-5
+                [scrollbar-color:#c8c4bb_transparent]
+                [scrollbar-width:thin]
               "
             >
               <div className="space-y-4">
@@ -352,6 +377,9 @@ export function Saathi() {
                     </div>
                   </motion.div>
                 )}
+
+                {/* Scroll anchor */}
+                <div ref={messagesEndRef} aria-hidden="true" />
               </div>
 
               {/* Starter prompts */}
