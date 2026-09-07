@@ -1,0 +1,283 @@
+// Yatra Setu — Prisma schema (SQLite)
+// NOTE: SQLite does not support Prisma enums or scalar lists,
+// so status/type fields are validated strings and lists are JSON text.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------------------------------------------------------------- Users
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  bio          String?
+  city         String?
+  homeRegion   String?
+  avatarUrl    String?
+  isOrganizer  Boolean  @default(false)
+  role         String   @default("TRAVELLER") // TRAVELLER | LEADER | ADMIN
+  points       Int      @default(0) // service points earned from verified check-ins
+  createdAt    DateTime @default(now())
+
+  rsvps                 EventRSVP[]
+  attendances           AttendanceRecord[]
+  earnedStamps          UserStamp[]
+  redemptions           Redemption[]
+  organizedEvents       RestorationEvent[]
+  communityApplication  CommunityApplication?
+  spotReports           SpotReport[]
+  itineraries           UserItinerary[]
+}
+
+// ---------------------------------------------------------------- Community leads
+
+// Application to become a verified Community Lead (NGO, municipal body, NSS/NCC
+// cell, tourism-dept officer). Status is reviewed by admins — never self-granted.
+model CommunityApplication {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  affiliation  String // NGO | MUNICIPAL | COLLEGE | TOURISM
+  orgName      String
+  contactEmail String?
+  status       String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  createdAt    DateTime  @default(now())
+  reviewedAt   DateTime?
+}
+
+// ---------------------------------------------------------------- Spot alerts
+
+// "Trending spot alert": a traveller flags a place being loved past its limit
+// (overcrowding, waste overflow, damage). Reports feed the alert board and the
+// impact page.
+model SpotReport {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  spotName    String
+  region      String?
+  category    String // OVERCROWDING | WASTE | DAMAGE
+  description String?
+  status      String   @default("OPEN") // OPEN | VERIFIED | RESOLVED
+  createdAt   DateTime @default(now())
+}
+
+// ---------------------------------------------------------------- Destinations
+
+model Destination {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  hindiName   String? // e.g. "वाराणसी"
+  region      String // Ladakh, Kerala, Rajasthan…
+  tagline     String
+  story       String
+  image       String
+  imageAlt    String
+  heroImage   String?
+  coordinates String? // "lat,lng"
+  mapX        Float? // normalized 0–1 position on the India map (west→east)
+  mapY        Float? // normalized 0–1 position on the India map (north→south)
+  bestSeason  String?
+  knownFor    String // JSON array of strings
+  needsCare   String? // what this place needs (restoration hook)
+  careImage   String?
+  featured    Boolean     @default(false) // highlighted on the India map + spotlight
+  createdAt   DateTime @default(now())
+
+  stays       Stay[]
+  itineraries Itinerary[]
+  events      RestorationEvent[]
+  planItems   ItineraryItem[]
+}
+
+// ---------------------------------------------------------------- Stays
+
+model Stay {
+  id            String      @id @default(cuid())
+  name          String
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  description   String
+  image         String
+  pricePerNight Int // INR
+  rating        Float
+  amenityTags   String // JSON array of strings
+  ecoBadge      Boolean     @default(false) // participates in the give-back loop
+  url           String?
+}
+
+// ---------------------------------------------------------------- Itineraries
+
+model Itinerary {
+  id            String      @id @default(cuid())
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  title         String
+  durationDays  Int
+  summary       String
+  image         String
+  bestFor       String
+  stops         ItineraryStop[]
+}
+
+model ItineraryStop {
+  id          String    @id @default(cuid())
+  itineraryId String
+  itinerary   Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  day         Int
+  title       String
+  description String
+  giveBack    String? // optional restoration activity woven into the day
+}
+
+// ---------------------------------------------------------------- Restoration events
+
+model RestorationEvent {
+  id            String      @id @default(cuid())
+  title         String
+  slug          String      @unique
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  date          DateTime
+  startTime     String // "07:00"
+  endTime       String?
+  meetingPoint  String
+  description   String
+  whatToBring   String
+  capacity      Int
+  organizerName String
+  organizerId   String?
+  organizer     User?       @relation(fields: [organizerId], references: [id])
+  image         String
+  status        String      @default("OPEN") // OPEN | FULL | CANCELLED | COMPLETED
+  checkinCode   String? // printed at the site / encoded in the event QR
+  createdAt     DateTime    @default(now())
+
+  rsvps     EventRSVP[]
+  itineraryItems ItineraryItem[]
+}
+
+// ---------------------------------------------------------------- RSVP + verified attendance
+
+model EventRSVP {
+  id        String        @id @default(cuid())
+  eventId   String
+  event     RestorationEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String        @default("CONFIRMED") // CONFIRMED | CANCELLED | ATTENDED
+  createdAt DateTime      @default(now())
+
+  checkin AttendanceRecord?
+
+  @@unique([eventId, userId])
+}
+
+// A verified contribution: timestamp + location captured at check-in time
+model AttendanceRecord {
+  id          String    @id @default(cuid())
+  rsvpId      String    @unique
+  rsvp        EventRSVP @relation(fields: [rsvpId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  verifiedAt  DateTime  @default(now())
+  latitude    Float?
+  longitude   Float?
+  geoAccuracy Float?
+  method      String // "qr" | "code" | "organizer"
+  token       String?
+  stampId     String?
+  stamp       Stamp?    @relation(fields: [stampId], references: [id])
+}
+
+// ---------------------------------------------------------------- Stamps & rewards
+
+model Stamp {
+  id          String @id @default(cuid())
+  code        String @unique
+  name        String
+  nameHindi   String?
+  description String
+  icon        String // lucide icon name
+  color       String?
+  tier        Int // 1–3
+
+  userStamps UserStamp[]
+  attendances AttendanceRecord[]
+}
+
+model UserStamp {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stampId  String
+  stamp    Stamp    @relation(fields: [stampId], references: [id], onDelete: Cascade)
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, stampId])
+}
+
+model Reward {
+  id          String @id @default(cuid())
+  code        String @unique
+  title       String
+  description String
+  partner     String
+  type        String // "discount" | "coupon" | "freebie"
+  value       String // "15% off" | "₹500 off"
+  costStamps  Int
+  image       String?
+
+  redemptions Redemption[]
+}
+
+model Redemption {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rewardId   String
+  reward     Reward   @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  code       String // unique coupon code issued to the user
+  costStamps Int      // stamps deducted at redemption time
+  redeemedAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------- My Yatra (user-built itineraries)
+
+// A traveller's own journey plan — distinct from the curated Itinerary model.
+model UserItinerary {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  startDate DateTime?
+  createdAt DateTime @default(now())
+
+  items ItineraryItem[]
+}
+
+// One stop on a personal itinerary: a destination visit or a restoration event.
+// `position` drives ordering; reordering is a real DB update.
+model ItineraryItem {
+  id             String          @id @default(cuid())
+  itineraryId    String
+  itinerary      UserItinerary   @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  destinationId  String?
+  destination    Destination?    @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  eventId        String?
+  event          RestorationEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  day            Int             @default(1)
+  position       Int             @default(0)
+  note           String?
+
+  @@index([itineraryId, position])
+}

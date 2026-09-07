@@ -1,26 +1,216 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ------------------------------------------------------------------ */
+/*  Yatra Setu — design tokens (v2)                                    */
+/*  Yatra bane seva. "Let the journey become service."                */
+/*  See DESIGN.md for the design-system rationale.                    */
+/* ------------------------------------------------------------------ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@theme {
+  /* Color system ------------------------------------------------------
+     Cool slate neutrals; warmth lives only in saffron + photography.  */
+  --color-ink: #0b0f17;
+  --color-ink-soft: #10161f;
+  --color-ink-raised: #161d29;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Paper — near-white editorial ground */
+  --color-paper: #fafafa;
+  --color-paper-soft: #f1f3f5;
+  --color-paper-raised: #ffffff;
+
+  /* The two accents, strict jobs (DESIGN.md §2) */
+  --color-saffron: #e65100;
+  --color-saffron-deep: #c44400;
+  --color-teal: #004d40;
+  --color-verify: #2e7d32;
+  --color-error: #b4231f;
+
+  /* Muted text + hairlines */
+  --color-mist: #9ba6b5; /* muted text on dark  — 7.6:1 on ink */
+  --color-stone: #5b6472; /* muted text on light — 5.7:1 on paper */
+  --color-fog: #232b38; /* hairlines on dark */
+
+  /* Typography ------------------------------------------------------ */
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-deva: var(--font-noto-devanagari), "Noto Serif Devanagari", serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+
+  /* Radius — sharp, printed edges (no pill CTAs, no bubbles) */
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+
+  /* Shadows — neutral, tight, quiet */
+  --shadow-soft: 0 1px 2px rgb(11 15 23 / 0.06), 0 8px 24px -16px rgb(11 15 23 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(11 15 23 / 0.08), 0 16px 40px -20px rgb(11 15 23 / 0.28);
+  --shadow-card: 0 1px 2px rgb(11 15 23 / 0.06), 0 8px 24px -16px rgb(11 15 23 / 0.16);
+
+  /* Motion ---------------------------------------------------------- */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --animate-pulse-dot: pulse-dot 2.4s ease-in-out infinite;
+  --animate-arc-flow: arc-flow 7s linear infinite;
+
+  @keyframes arc-flow {
+    to {
+      stroke-dashoffset: -10;
+    }
+  }
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.55;
+      transform: scale(0.8);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ------------------------------------------------------------------ */
+/*  Base                                                               */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Overflow guard: clip any accidental right-edge bleed without creating
+     a scroll container (keeps position: sticky and Lenis working). */
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display;
+  }
+
+  ::selection {
+    background: var(--color-saffron);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-saffron);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  img {
+    user-select: none;
+  }
+
+  /* Tasteful scrollbar for the editorial feel */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-paper-soft);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-ink) 35%, transparent);
+    border-radius: 999px;
+    border: 2px solid var(--color-paper-soft);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Editorial utilities                                                */
+/* ------------------------------------------------------------------ */
+
+@utility eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+@utility meta-mono {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+@utility hairline {
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+/* Frosted bar is reserved for the single scrolling nav — the only glass */
+@utility glass-light {
+  background: color-mix(in srgb, var(--color-paper) 86%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, var(--color-ink) 8%, transparent);
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Yatra routes — dashes flow along the featured-destination arcs.
+   Dash pattern is `3 7` (period 10), so a -10 offset loops seamlessly. */
+.ys-arc {
+  animation: var(--animate-arc-flow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ys-arc {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Custom cursor — native cursor hidden only on fine pointers         */
+/*  once the CustomCursor component is mounted (html.ys-cursor)        */
+/* ------------------------------------------------------------------ */
+
+@media (pointer: fine) {
+  html.ys-cursor,
+  html.ys-cursor * {
+    cursor: none !important;
+  }
+  /* keep a text caret feel over fields */
+  html.ys-cursor input,
+  html.ys-cursor textarea,
+  html.ys-cursor select {
+    cursor: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Reduced motion — global guard                                      */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
